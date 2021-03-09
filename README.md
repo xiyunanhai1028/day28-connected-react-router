@@ -1,70 +1,155 @@
-# Getting Started with Create React App
+## connected-react-router
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### 1.项目依赖
 
-## Available Scripts
+```javascript
+npm install redux react-redux react-router-dom connected-react-router -S
+```
 
-In the project directory, you can run:
+### 2.使用
 
-### `yarn start`
+![基本使用](https://tva1.sinaimg.cn/large/008eGmZEly1godhq8ypr3g30gk0hswpl.gif)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### 2.1.`src/index.js`
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```javascript
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import { Route, Link } from 'react-router-dom';
+import { ConnectedRouter } from 'connected-react-router';
+import history from './history';
+import store from './store';
+import Home from './components/Home';
+import Counter from './components/Counter';
+ReactDOM.render(<Provider store={store}>
+    <ConnectedRouter history={history}>
+        <>
+            <Link to='/' >Home</Link> |
+            <Link to='/counter'>Counter</Link>
+            <Route path='/' exact component={Home} />
+            <Route path='/counter' exact component={Counter} />
+        </>
+    </ConnectedRouter>
+</Provider>, document.getElementById('root'));
+```
 
-### `yarn test`
+#### 2.2.`components/Home.js`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```javascript
+import React from 'react';
 
-### `yarn build`
+class Home extends React.Component {
+    render() {
+        return <div>
+            <h1>Home</h1>
+            <button onClick={() => this.props.history.go(-1)}>返回</button>
+        </div>
+    }
+}
+export default Home;
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### 2.3.`components/Counter.js`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```javascript
+import React from 'react';
+import { connect } from 'react-redux';
+import actions from '../store/actions/counter';
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+class Counter extends React.Component {
+    render() {
+        return <div>
+            <p>{this.props.num}</p>
+            <button onClick={this.props.add}>+</button>
+            <button onClick={this.props.minus}>-</button>
+            <button onClick={() => this.props.go('/')}>go home</button>
+        </div>
+    }
+}
 
-### `yarn eject`
+const mapStateToProps = state => state.counter;
+export default connect(mapStateToProps, actions)(Counter);
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+#### 2.4.`src/history.js`
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```javascript
+import {createBrowserHistory} from 'history';
+export default createBrowserHistory();
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+#### 2.5.`store/index.js`
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```javascript
+import { applyMiddleware, createStore } from 'redux';
+import { routerMiddleware } from 'connected-react-router';
+import history from '../history';
+import reducers from './reducers';
+export default applyMiddleware(routerMiddleware(history))(createStore)(reducers);
+```
 
-## Learn More
+#### 2.6.`store/action-types.js`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```javascript
+const ADD = 'ADD';
+const MINUS = 'MINUS';
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+export {
+    ADD,
+    MINUS
+}
+```
 
-### Code Splitting
+#### 2.7.`store/actions/counter.js`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```javascript
+import { push } from 'connected-react-router';
+import * as types from '../action-types';
+const actions = {
+    add() {
+        return { type: types.ADD };
+    },
+    mimus() {
+        return { types: types.MINUS };
+    },
+    go(path) {
+        return push(path);
+    }
+}
+export default actions
+```
 
-### Analyzing the Bundle Size
+#### 2.8.`store/reducers/index.js`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```javascript
+import { combineReducers } from 'redux';
+import { connectRouter } from 'connected-react-router';
+import counter from './counter';
+import history from '../../history';
 
-### Making a Progressive Web App
+const reducers = {
+    router: connectRouter(history),
+    counter
+}
+export default combineReducers(reducers);
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+#### 2.9.`store/reducers/counter.js`
 
-### Advanced Configuration
+```javascript
+import * as types from '../action-types';
+const initialState = { num: 0 };
+function reduer(state = initialState, action) {
+    switch (action.type) {
+        case types.ADD:
+            return { num: state.num + 1 }
+        case types.MINUS:
+            return { num: state.num - 1 }
+        default:
+            return state
+    }
+}
+export default reduer;
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
